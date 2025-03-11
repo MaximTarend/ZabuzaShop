@@ -5,3 +5,9 @@
 # Требования к системе
 * [Функциональные требования](https://github.com/MaximTarend/ZabuzaShop/blob/main/Requirements/FR.md)
 * [Нефункциональные требования](https://github.com/MaximTarend/ZabuzaShop/blob/main/Requirements/NFR.md)
+# Архитектура проекта
+Архитектура описана в нотации С4
+* СONTEXT LEVEL
+  ![context](https://github.com/MaximTarend/ZabuzaShop/blob/main/System%20Architecture/C4_CONTEXT.png)
+* CONTAINER LEVEL
+  ![container](https://github.com/MaximTarend/ZabuzaShop/blob/main/System%20Architecture/C4_CONTAINER.png)
