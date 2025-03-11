@@ -1,40 +1,31 @@
 # GET /suppliers/products
 ## Описание
 Получение списка всех товаров поставщика в магазине (с поддержкой пагинации и сортировки)
-## Параметры запроса
+## Параметры запроса (query)
 | Параметр | Тип | Возможные значения | Значение по умолчанию |
 |:-------|:-------|:---------|:-|
 | sort_by | string | price, id, stockQuantity| price |
 | order | string   | asc, desc | asc |
-## Тело запроса
-```json
-{
-  "username": "max@gmail.com",
-  "password": "password"
-}
-```
 ## Тело ответа (200 OK)
+Список товаров поставщика (складские запасы)
 ```json
 {
-  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6IjEyMzQiLCJ1c2VybmFtZSI6ImJpcnNjaG5lcnNvZXZfaGVsbG9fc2VjdXJpdHkiLCJyb2xlIjoidXNlciJ9.cZL6FJ2EKzK4gSKpPVo5v6poE1T9m3MxoA3on8RHkJ2I",
-  "refreshToken": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6IjEyMzQiLCJ1c2VybmFtZSI6ImJpcnNjaG5lcnNvZXZfaGVsbG9fc2VjdXJpdHkiLCJyb2xlIjoidXNlciJ9.cZL6FJ2EKzK4gSKpPVo5v6poE1T9m3MxoA3on8RHkJ2I",
-  "expiersIn": 3600
+  "supplierId": 25,
+  "products": [
+    {
+      "productId": 101,
+      "article": "1254521",
+      "description": "Товар_1",
+      "unit": "шт",
+      "category": "Манга",
+      "price": "15.00",
+      "stockQuantity": 90
+    }
+  ]
 }
 ```
 ## Ошибки
-### 400 - Некорректный запрос
-Пример ответа:
-```json
-{
-  "error": "Bad Request",
-  "message": "Некорректный формат данных",
-  "details": {
-    "field": "password",
-    "issue": "Пароль должен содержать минимум 8 символов, включая цифры и буквы."
-  }
-}
-```
-### 401 - Неавторизованный пользователь
+### 401 - Невалидный токен
 Пример ответа:
 ```json
 {
