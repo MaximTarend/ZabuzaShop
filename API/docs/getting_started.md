@@ -11,7 +11,7 @@
 curl -X POST "https://virtserver.swaggerhub.com/DEDMASIM/ZabuzaAPI/1.0.0/auth/login" \
 -H "Content-Type: application/json" \
 -d '{
-  "username": "example@example.com",
+  "username": "max@gmail.com",
   "password": "password"
 }'
 ```
