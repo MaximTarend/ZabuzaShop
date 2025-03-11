@@ -1,0 +1,651 @@
+openapi: 3.0.0
+servers:
+  # Added by API Auto Mocking Plugin
+  # Added by API Auto Mocking Plugin
+  - description: SwaggerHub API Auto Mocking
+    url: https://virtserver.swaggerhub.com/DEDMASIM/ZabuzaAPI/1.0.0
+  - description: SwaggerHub API Auto Mocking 
+    url: https://virtserver.swaggerhub.com/TAREND/zabuzaApi/1.0.0
+
+info:
+  description: API для управления поставками товаров в интернет-магазин zabuza.com
+  version: "1.0.0"
+  title: ZabuzaApi
+  contact:
+    email: dedmasim@gmail.com
+  license:
+    name: Apache 2.0
+    url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
+tags:
+  - name: supplier
+    description: Поставщик
+ 
+paths:
+
+  /auth/login:
+    post:
+      tags:
+        - supplier
+      summary: Вход пользователя в систему
+      description: Аутентификация пользователя с использованием логина и пароля.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  description: Email поставщика
+                  example: "max@gmail.com"
+                password:
+                  type: string
+                  format: password
+                  description: Проль выданный при регистрации
+                  example: "password"
+      responses:
+        '200':
+          description: Успешная аутентификация
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                    description: Bearer Token для аутентификации
+                    example: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6IjEyMzQiLCJ1c2VybmFtZSI6ImJpcnNjaG5lcnNvZXZfaGVsbG9fc2VjdXJpdHkiLCJyb2xlIjoidXNlciJ9.cZL6FJ2EKzK4gSKpPVo5v6poE1T9m3MxoA3on8RHkJ2I"
+                  refreshToken:
+                    type: string
+                    description: Bearer Token для аутентификации
+                    example: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6IjEyMzQiLCJ1c2VybmFtZSI6ImJpcnNjaG5lcnNvZXZfaGVsbG9fc2VjdXJpdHkiLCJyb2xlIjoidXNlciJ9.cZL6FJ2EKzK4gSKpPVo5v6poE1T9m3MxoA3on8RHkJ2I"
+                  expiersIn:
+                    type: integer
+                    description: Время в секундах, через которое истекает время годности токена.
+                    minimum: 3600
+                    default: 3600
+        '400':
+          description: Некорректный запрос
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Краткое описание ошибки
+                    example: "Bad Request"
+                  message:
+                    type: string
+                    description: Сообщение для клиента
+                    example: "Некорректный формат данных"
+                  details:
+                    type: object
+                    properties:
+                      field:
+                        type: string
+                        description: Имя поля, в котором обнаружена ошибка
+                        example: "password"
+                      issue:
+                        type: string
+                        description: Описание ошибки
+                        example: "Пароль должен содержать минимум 8 символов, включая цифры и буквы."
+        '401':
+          description: Неавторизованный пользователь
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: 
+                  error:
+                    type: string
+                    description: Краткое описание ошибки
+                    example: "Unauthorized"
+                  message:
+                    type: string
+                    description: Сообщение для клиента
+                    example:  "Токен неверный или истек"
+        '429':
+          description: Слишком много запросов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/429ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/500ErrorResponse'
+
+  /suppliers/products:
+    get:
+      tags:
+        - supplier
+      summary: Просмотр всех товров поставщика        
+      operationId: getStockProductsBySupplier
+      security:
+        - bearerAuth: []
+      description:  Получение списка всех товаров поставщика в магазине (с поддержкой пагинации и сортировки)
+      parameters:
+        - name: sort_by
+          in: query
+          description: Параметр для сортировки
+          required: false
+          schema: 
+            type: string
+            enum: [price, id, stockQuantity]
+            default: price
+        - name: order
+          in: query
+          description: Порядок сортировки
+          required: false
+          schema: 
+            type: string
+            enum: [asc, desc]
+            default: asc
+      responses:
+        '200':
+          description: Список товаров поставщика (складские запасы)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/getProductsResponse'
+                  - $ref: '#/components/schemas/getProductsResponseNotFound'
+        '401':
+          description: Невалидный токен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401ErrorResponse'
+        '429':
+          description: Слишком много запросов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/429ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/500ErrorResponse'
+
+  /suppliers/orders:
+    post:
+      tags:
+        - supplier
+      summary: Создать новую поставку      
+      operationId: createSupplierOrder
+      security:
+        - bearerAuth: []
+      description:  Создание новой поставки поставщика
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/postOrderRequest'
+      responses:
+        '200':
+          description: Результат создания поставки
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/postPatchOrderResponse'
+        '400':
+          description: Ошибка в запросе
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: 
+                  error:
+                    type: string
+                    description: Краткое описание ошибки
+                    example: "Bad request"
+                  message:
+                    type: string
+                    description: Сообщение для клиента
+                    example:  "Товары с артикулами: 1254521 не существуют в системе. Обратитесь к вашему менеджеру."
+        '401':
+          description: Невалидный токен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401ErrorResponse'
+        '429':
+          description: Слишком много запросов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/429ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/500ErrorResponse'
+                
+                
+  /suppliers/orders/{id}:
+    patch:
+      tags:
+        - supplier
+      summary: Редактировать существующую поставку      
+      operationId: updateSupplierOrder
+      security:
+        - bearerAuth: []
+      description:  Редактировать существующую поставку
+      parameters:
+        - name: id
+          in: path
+          description: Идентификатор поставки
+          required: true
+          schema:
+            type: integer
+            example: 1      
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/patchOrderRequest'
+      responses:
+        '200':
+          description: Результат редактирования поставки
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/postPatchOrderResponse'
+        '400':
+          description: Ошибка в запросе
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: 
+                  error:
+                    type: string
+                    description: Краткое описание ошибки
+                    example: "Bad request"
+                  message:
+                    type: string
+                    description: Сообщение для клиента
+                    example:  "Товары с артикулами: 1254521 не существуют в системе. Обратитесь к вашему менеджеру."
+        "404":
+          description: Не найдено
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: 
+                  error:
+                    type: string
+                    description: Краткое описание ошибки
+                    example: "Not found"
+                  message:
+                    type: string
+                    description: Сообщение для клиента
+                    example:  "Поставки с указанным ID не существует"
+        '401':
+          description: Невалидный токен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401ErrorResponse'
+        '429':
+          description: Слишком много запросов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/429ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/500ErrorResponse'
+
+    delete:
+      tags:
+        - supplier
+      summary: Удалить существующую поставку      
+      operationId: deleteSupplierOrder
+      security:
+        - bearerAuth: []
+      description:  Удалить существующую поставку
+      parameters:
+        - name: id
+          in: path
+          description: Идентификатор поставки
+          required: true
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: Поставка успешно удалена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/deleteOrderResponse'
+        '400':
+          description: Ошибка в запросе
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: 
+                  error:
+                    type: string
+                    description: Краткое описание ошибки
+                    example: "Bad request"
+                  message:
+                    type: string
+                    description: Сообщение для клиента
+                    example:  "Поставку ID=152 в статусе 'В обработке' удалить нельзя"
+        "404": 
+          description: Не найдено
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: 
+                  error:
+                    type: string
+                    description: Краткое описание ошибки
+                    example: "Not found"
+                  message:
+                    type: string
+                    description: Сообщение для клиента
+                    example:  "Поставки с указанным ID не существует"
+        '401':
+          description: Невалидный токен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/401ErrorResponse'
+        '429':
+          description: Слишком много запросов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/429ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/500ErrorResponse'
+
+components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+ 
+  schemas:
+          
+    getProductsResponse:
+      type: object
+      properties: 
+        supplierId: 
+          type: integer
+          example: 25
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/productFull'
+      required: 
+        - supplierId
+        - products
+      
+    getProductsResponseNotFound:
+      type: object
+      properties: 
+        supplierId: 
+          type: integer
+          example: 25
+        products:
+          type: array
+          items: 
+            type: string
+          example: []
+        message: 
+          type: string
+          default: "На данный момент ваших товаров нет на складе"
+      required:
+        - supplierId
+        - products
+        - message
+
+    postOrderRequest:
+      type: object
+      properties:
+        deliveryDate:
+          type: string  
+          format: date
+          example: "2025-03-25"
+        totalSum: 
+          type: string
+          example: "5445.00"
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/productForPostOrderRequest'
+      required: 
+        - deliveryDate
+        - totalSum
+        - products   
+        
+    patchOrderRequest:
+      type: object
+      properties:
+        deliveryDate:
+          type: string  
+          format: date
+          example: "2025-03-25"
+        totalSum: 
+          type: string
+          example: "5445.00"
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/productForPatchOrderRequest'
+      required: 
+        - totalSum
+        - products
+        
+    postPatchOrderResponse:
+      type: object
+      properties:
+        supplierId:
+          type: integer
+          example: 25
+        orderId:
+          type: integer
+          example: 25
+        status:
+          type: string
+          example: "Создано (отредактировано)"
+        deliveryDate:
+          type: string  
+          format: date
+          example: "2025-03-25"
+        totalSum: 
+          type: string
+          example: "5445.00"
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/productForOrderResponse'
+      required: 
+        - supplierId
+        - orderId
+        - status
+        - deliveryDate
+        - totalSum
+        - products
+        
+    deleteOrderResponse:
+      type: object
+      properties:
+        supplierId:
+          type: integer
+          example: 25
+        orderId:
+          type: integer
+          example: 25
+        status:
+          type: string
+          example: "Удалено"
+      required: 
+        - supplierId
+        - orderId
+        - status
+        
+    productFull:
+      type: object
+      properties:
+        productId:
+          type: integer
+          example: 101
+        article:
+          type: string
+          example: "1254521"
+        description:
+          type: string
+          example: "Товар_1"
+        unit:
+          type: string
+          example: "шт"
+        category:
+          type: string
+          example: "Манга"
+        price:
+          type: string
+          example: "15.00"
+        stockQuantity:
+          type: integer
+          example: 90
+      required:
+        - id
+        - article
+        - description
+        - unit
+        - category
+        - price
+        - stockQuantity
+        
+    productForPostOrderRequest:
+      type: object
+      properties:
+        article:
+          type: string
+          example: "1254521"
+        price:
+          type: string
+          example: "15.00"
+        quantity:
+          type: integer
+          example: 90
+      required:
+        - article
+        - price
+        - quantity    
+        
+    productForPatchOrderRequest:
+      type: object
+      properties:
+        article:
+          type: string
+          example: "1254521"
+        price:
+          type: string
+          example: "15.00"
+        quantity:
+          type: integer
+          example: 90
+        
+    productForOrderResponse:
+      type: object
+      properties:
+        productId:
+          type: integer
+          example: 101
+        article:
+          type: string
+          example: "1254521"
+        price:
+          type: string
+          example: "15.00"
+        quantity:
+          type: integer
+          example: 90
+      required:
+        - productId
+        - article
+        - price
+        - quantity
+        
+    401ErrorResponse:
+      type: object
+      required: 
+        - error
+        - message
+      properties: 
+        error:
+          type: string
+          description: Краткое описание ошибки
+          example: "Unauthorized"
+        message:
+          type: string
+          description: Сообщение для клиента
+          example:  "Токен неверный или истек"
+        retryAfter:
+          type: integer
+          description: Кол-во секунд, на которое пользователю запрещено совершать запросы
+          example: 60
+  
+    429ErrorResponse:
+      type: object
+      required: 
+        - error
+        - message
+        - retryAfter
+      properties: 
+        error:
+          type: string
+          description: Краткое описание ошибки
+          example: "Internal Server Error"
+        message:
+          type: string
+          description: Сообщение для клиента
+          example:  "Внутренняя ошибка сервера. Попробуйте позже."
+        retryAfter:
+          type: integer
+          description: Кол-во секунд, на которое пользователю запрещено совершать запросы
+          example: 60
+    
+    500ErrorResponse:
+      type: object
+      required: 
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Краткое описание ошибки
+          example: "Internal Server Error"
+        message:
+          type: string
+          description: Сообщение для клиента
+          example:  "Внутренняя ошибка сервера. Попробуйте позже."
